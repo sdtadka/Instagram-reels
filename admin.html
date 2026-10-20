@@ -1,141 +1,900 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#f5f7fb">
-<title>Dashboard</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Location Admin</title>
 <style>
-  :root {
-    /* ⚠️ अगर banner अभी भी ऊपर दिखे तो 60px बढ़ाएं (70px, 80px) */
-    /* अगर admin panel का ऊपरी हिस्सा कट रहा हो तो 60px घटाएं (50px, 45px) */
-    --banner-offset: 60px;
-  }
+:root {
+  --primary: #5b8dff;
+  --primary-soft: rgba(91,141,255,0.12);
+  --danger: #ef4444;
+  --success: #16a34a;
+  --warning: #f59e0b;
+  --text: #1a1f2e;
+  --text-soft: #475569;
+  --muted: #64748b;
+  --bg: #f5f7fb;
+  --card: #ffffff;
+  --border: #e2e8f0;
+  --border-soft: #eef2f7;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { min-height: 100vh; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--text); background: var(--bg); overflow-x: hidden; position: relative;
+}
+body::before, body::after {
+  content: ''; position: fixed; border-radius: 50%; filter: blur(100px);
+  z-index: 0; pointer-events: none; opacity: 0.5;
+}
+body::before { width: 500px; height: 500px; background: radial-gradient(circle, rgba(91,141,255,0.25), transparent 70%); top: -150px; left: -150px; }
+body::after { width: 600px; height: 600px; background: radial-gradient(circle, rgba(168,85,247,0.18), transparent 70%); bottom: -200px; right: -200px; }
+.login-screen, .dashboard, .modal-overlay, .toast, .blocked-screen { position: relative; z-index: 1; }
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+.icon { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; display: inline-block; vertical-align: middle; flex-shrink: 0; }
+.icon-sm { width: 16px; height: 16px; }
+.icon-lg { width: 28px; height: 28px; }
 
-  html, body {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: #f5f7fb;
-  }
+.login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+.login-card {
+  width: 100%; max-width: 420px; background: var(--card); border: 1px solid var(--border);
+  border-radius: 22px; padding: 40px 32px;
+  box-shadow: 0 4px 6px rgba(15,23,42,0.03), 0 20px 50px rgba(15,23,42,0.1);
+}
+.login-brand { display: flex; align-items: center; gap: 14px; margin-bottom: 28px; }
+.brand-icon {
+  width: 52px; height: 52px; background: linear-gradient(135deg, #5b8dff, #7b5cff);
+  border-radius: 14px; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 20px rgba(91,141,255,0.35); color: #fff;
+}
+.login-brand h1 { font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+.login-brand p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.input-group { margin-bottom: 16px; }
+.input-group label { display: block; font-size: 11px; color: var(--muted); font-weight: 700; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+.input-wrap { position: relative; }
+.input-wrap .icon-lead { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+.input-wrap input {
+  width: 100%; padding: 14px 16px 14px 46px; background: #f8fafc;
+  border: 1.5px solid var(--border); border-radius: 12px;
+  font-size: 15px; color: var(--text); transition: all 0.2s; font-family: inherit;
+}
+.input-wrap input:focus { outline: none; border-color: var(--primary); background: #fff; box-shadow: 0 0 0 4px rgba(91,141,255,0.12); }
+.btn {
+  width: 100%; padding: 14px; background: linear-gradient(135deg, var(--primary), #7b5cff);
+  border: none; border-radius: 12px; color: #fff; font-size: 15px; font-weight: 600;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: all 0.2s; font-family: inherit; box-shadow: 0 6px 20px rgba(91,141,255,0.3);
+}
+.btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 26px rgba(91,141,255,0.45); }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.msg-box { margin-top: 14px; padding: 12px 14px; border-radius: 10px; font-size: 13px; display: none; align-items: center; gap: 8px; line-height: 1.4; }
+.msg-box.show { display: flex; }
+.msg-box.error { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
+.msg-box.info { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+.msg-box.success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; }
+.spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite; display: none; }
+.spinner.show { display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-  #appShell {
-    position: fixed;
-    inset: 0;
-    overflow: hidden;
-    background: #f5f7fb;
-  }
+.dashboard { display: none; padding: 24px; max-width: 1440px; margin: 0 auto; }
+.dashboard.show { display: block; }
+.topbar {
+  display: flex; justify-content: space-between; align-items: center; padding: 16px 24px;
+  background: var(--card); border: 1px solid var(--border); border-radius: 18px;
+  box-shadow: 0 2px 8px rgba(15,23,42,0.04); margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+}
+.topbar-title { display: flex; align-items: center; gap: 14px; }
+.topbar-title .brand-icon { width: 44px; height: 44px; border-radius: 12px; }
+.topbar-title h1 { font-size: 17px; font-weight: 700; color: var(--text); }
+.topbar-title p { font-size: 12px; color: var(--muted); margin-top: 1px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.role-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; }
+.role-badge.admin { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.role-badge.user { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+.topbar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn-chip { padding: 9px 16px; border-radius: 10px; border: 1.5px solid var(--border); background: #fff; color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; transition: all 0.15s; font-family: inherit; }
+.btn-chip:hover { background: #f8fafc; border-color: #cbd5e1; }
+.btn-chip.primary { color: var(--primary); border-color: #bfdbfe; background: #eff4ff; }
+.btn-chip.primary:hover { background: #dbeafe; }
+.btn-chip.danger { color: var(--danger); border-color: #fecaca; }
+.btn-chip.danger:hover { background: #fef2f2; }
 
-  #appFrame {
-    position: absolute;
-    top: calc(-1 * var(--banner-offset));
-    left: 0;
-    width: 100%;
-    height: calc(100% + var(--banner-offset));
-    border: 0;
-    display: block;
-    background: #f5f7fb;
-    color-scheme: light;
-  }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.stat-card {
+  border-radius: 18px; padding: 20px; color: #fff; cursor: pointer; position: relative;
+  overflow: hidden; transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 6px 20px rgba(15,23,42,0.12); border: 2px solid transparent; user-select: none;
+}
+.stat-card:hover { transform: translateY(-4px); box-shadow: 0 14px 34px rgba(15,23,42,0.18); }
+.stat-card:active { transform: translateY(-2px) scale(0.99); }
+.stat-card.active { border-color: rgba(255,255,255,0.95); box-shadow: 0 0 0 3px rgba(15,23,42,0.08), 0 14px 34px rgba(15,23,42,0.2); transform: translateY(-3px); }
+.stat-card::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent 60%); pointer-events: none; }
+.stat-card.blue { background: linear-gradient(135deg, #5b8dff 0%, #3d6ef0 100%); }
+.stat-card.green { background: linear-gradient(135deg, #22c98a 0%, #12a870 100%); }
+.stat-card.purple { background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%); }
+.stat-card.orange { background: linear-gradient(135deg, #ffa726 0%, #f57c00 100%); }
+.stat-card.crimson { background: linear-gradient(135deg, #f43f5e 0%, #be123c 100%); }
+.stat-icon { width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.22); color: #fff; margin-bottom: 10px; position: relative; z-index: 1; }
+.stat-icon .icon { color: #fff; }
+.stat-label { font-size: 10px; color: rgba(255,255,255,0.92); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin-bottom: 5px; position: relative; z-index: 1; }
+.stat-value { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; color: #fff; position: relative; z-index: 1; }
+.stat-value.small { font-size: 15px; font-weight: 700; }
 
-  /* Loading overlay */
-  #loader {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 14px;
-    background: #f5f7fb;
-    z-index: 9999;
-    opacity: 1;
-    transition: opacity 0.35s ease;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    color: #64748b;
-    font-size: 14px;
-    font-weight: 500;
-  }
-  #loader.hide { opacity: 0; pointer-events: none; }
+.table-card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; box-shadow: 0 2px 10px rgba(15,23,42,0.05); overflow: hidden; }
+.table-head { display: flex; justify-content: space-between; align-items: center; padding: 20px 22px; border-bottom: 1px solid var(--border-soft); flex-wrap: wrap; gap: 12px; }
+.table-head h2 { font-size: 15px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 10px; }
+.table-head h2 .icon { color: var(--primary); }
+.table-head h2 .filter-badge { font-size: 11px; background: var(--primary-soft); color: var(--primary); padding: 3px 10px; border-radius: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+.table-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+.search-wrap { position: relative; }
+.search-wrap .icon-lead { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+.search-wrap input { padding: 9px 14px 9px 38px; background: #f8fafc; border: 1.5px solid var(--border); border-radius: 10px; color: var(--text); font-size: 13px; min-width: 220px; font-family: inherit; transition: all 0.2s; }
+.search-wrap input:focus { outline: none; border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(91,141,255,0.1); }
 
-  .ring {
-    width: 42px;
-    height: 42px;
-    border: 3px solid #e2e8f0;
-    border-top-color: #5b8dff;
-    border-radius: 50%;
-    animation: spin 0.9s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
+.table-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+thead { background: #f8fafc; }
+th { text-align: left; padding: 14px 16px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-weight: 700; border-bottom: 1px solid var(--border-soft); white-space: nowrap; }
+td { padding: 14px 16px; border-bottom: 1px solid var(--border-soft); vertical-align: middle; color: var(--text); }
+tr:last-child td { border-bottom: none; }
+tbody tr { transition: background 0.15s; }
+tbody tr:hover { background: #f8fafc; }
+
+.user-tag { display: inline-flex; align-items: center; gap: 6px; background: #eff4ff; color: #3d6ef0; padding: 5px 11px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+.user-tag .icon { width: 12px; height: 12px; }
+.coord-link { color: var(--primary); text-decoration: none; font-family: monospace; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
+.coord-link:hover { text-decoration: underline; }
+.coord-link .icon { width: 12px; height: 12px; }
+.ip-stack .ip-main { font-family: monospace; font-size: 12px; color: var(--text); font-weight: 700; }
+.ip-stack .ip-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.vpn-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 10px; border-radius: 20px;
+  font-size: 10px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  white-space: nowrap; cursor: help;
+}
+.vpn-badge .icon { width: 11px; height: 11px; }
+.vpn-badge.vpn-off { background: #f0fdf4; color: #15803d; border: 1.5px solid #bbf7d0; }
+.vpn-badge.vpn-on { background: #fef2f2; color: #b91c1c; border: 1.5px solid #fecaca; }
+.vpn-badge.vpn-unknown { background: #f1f5f9; color: #64748b; border: 1.5px solid #e2e8f0; }
+
+.actions-cell { display: flex; gap: 6px; }
+.action-btn { width: 34px; height: 34px; border-radius: 9px; border: 1.5px solid var(--border); background: #fff; color: var(--text-soft); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.action-btn:hover { background: #eff4ff; border-color: #bfdbfe; color: var(--primary); }
+.action-btn.danger:hover { background: #fef2f2; border-color: #fecaca; color: var(--danger); }
+.empty { text-align: center; padding: 70px 20px; color: var(--muted); }
+.empty .icon { width: 56px; height: 56px; color: #cbd5e1; margin-bottom: 16px; }
+.empty h3 { font-size: 16px; color: var(--text); margin-bottom: 6px; font-weight: 700; }
+.empty p { font-size: 13px; }
+
+.modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.55); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+.modal-overlay.show { display: flex; }
+.modal { background: #fff; border: 1px solid var(--border); border-radius: 20px; width: 100%; max-width: 780px; max-height: 90vh; box-shadow: 0 20px 60px rgba(15,23,42,0.3); display: flex; flex-direction: column; overflow: hidden; }
+.modal.wide { max-width: 900px; }
+.modal-head { display: flex; justify-content: space-between; align-items: center; padding: 18px 22px; border-bottom: 1px solid var(--border-soft); }
+.modal-head h3 { font-size: 15px; display: flex; align-items: center; gap: 10px; font-weight: 700; }
+.modal-head h3 .icon { color: var(--primary); }
+.modal-close { width: 34px; height: 34px; border: 1.5px solid var(--border); background: #fff; color: var(--text-soft); border-radius: 9px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.modal-close:hover { background: #fef2f2; color: var(--danger); border-color: #fecaca; }
+.modal-body { padding: 20px; overflow-y: auto; }
+.map-frame { width: 100%; height: 420px; border: 1px solid var(--border); border-radius: 14px; background: #f8fafc; display: block; }
+.map-open-btn { display: inline-flex; align-items: center; gap: 8px; margin-top: 14px; padding: 10px 20px; background: var(--primary-soft); color: var(--primary); border: 1px solid #bfdbfe; border-radius: 10px; text-decoration: none; font-size: 13px; font-weight: 700; transition: all 0.15s; }
+.map-open-btn:hover { background: #dbeafe; }
+
+.users-form { background: #f8fafc; border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr 130px auto; gap: 10px; align-items: end; }
+.users-form .field { display: flex; flex-direction: column; gap: 6px; }
+.users-form label { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+.users-form input, .users-form select { padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 9px; background: #fff; font-size: 13px; color: var(--text); font-family: inherit; }
+.users-form input:focus, .users-form select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(91,141,255,0.1); }
+.users-form button { height: 40px; padding: 0 18px; font-size: 13px; }
+.users-list { border-radius: 14px; overflow: hidden; border: 1px solid var(--border); }
+.users-list table { font-size: 13px; }
+.users-list th { padding: 12px 14px; font-size: 9px; }
+.users-list td { padding: 12px 14px; }
+.status-pill { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+.status-pill.active { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.status-pill.blocked { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+.mini-btn { padding: 6px 12px; border-radius: 8px; border: 1.5px solid var(--border); background: #fff; color: var(--text-soft); font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.15s; font-family: inherit; }
+.mini-btn:hover { background: #f8fafc; }
+.mini-btn.warn { color: var(--warning); border-color: #fde68a; }
+.mini-btn.warn:hover { background: #fffbeb; }
+.mini-btn.ok { color: var(--success); border-color: #bbf7d0; }
+.mini-btn.ok:hover { background: #f0fdf4; }
+.mini-btn.del { color: var(--danger); border-color: #fecaca; }
+.mini-btn.del:hover { background: #fef2f2; }
+
+.blocked-screen { display: none; min-height: 100vh; align-items: center; justify-content: center; padding: 20px; }
+.blocked-screen.show { display: flex; }
+.blocked-card { max-width: 460px; width: 100%; background: #fff; border: 1px solid #fecaca; border-radius: 22px; padding: 40px 32px; text-align: center; box-shadow: 0 20px 60px rgba(239,68,68,0.15); }
+.blocked-icon { width: 72px; height: 72px; margin: 0 auto 20px; border-radius: 50%; background: #fef2f2; display: flex; align-items: center; justify-content: center; color: var(--danger); }
+.blocked-icon .icon { width: 36px; height: 36px; }
+.blocked-card h2 { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 10px; }
+.blocked-card p { font-size: 14px; color: var(--text-soft); line-height: 1.6; margin-bottom: 24px; }
+
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px); background: #fff; border: 1px solid var(--border); padding: 13px 22px; border-radius: 12px; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 10px; box-shadow: 0 10px 40px rgba(15,23,42,0.18); opacity: 0; transition: all 0.3s; z-index: 2000; pointer-events: none; color: var(--text); }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.success { border-color: #bbf7d0; color: #15803d; }
+.toast.error { border-color: #fecaca; color: #b91c1c; }
+.toast.info { border-color: #bfdbfe; color: #1e40af; }
+
+@media (max-width: 640px) {
+  .dashboard { padding: 14px; }
+  .login-card { padding: 32px 22px; }
+  .topbar { padding: 14px 16px; }
+  .topbar-title h1 { font-size: 15px; }
+  .topbar-title .brand-icon { width: 38px; height: 38px; }
+  .stat-value { font-size: 22px; }
+  .stat-card { padding: 16px; }
+  th, td { padding: 10px 10px; font-size: 12px; }
+  .search-wrap input { min-width: 140px; }
+  .map-frame { height: 300px; }
+  .action-btn { width: 30px; height: 30px; }
+  .users-form { grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body>
 
-<div id="appShell">
-  <iframe
-    id="appFrame"
-    title="Dashboard"
-    allow="geolocation; clipboard-read; clipboard-write"
-    referrerpolicy="no-referrer"
-  ></iframe>
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+  <symbol id="i-shield-off" viewBox="0 0 24 24"><path d="M19.69 14a6.9 6.9 0 0 0 .31-2V5l-8-3-3.16 1.18"/><path d="M4.73 4.73L4 5v7c0 6 8 10 8 10a20.29 20.29 0 0 0 5.62-4.38"/><line x1="1" y1="1" x2="23" y2="23"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-user-plus" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></symbol>
+  <symbol id="i-database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></symbol>
+  <symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></symbol>
+</svg>
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="brand-icon"><svg class="icon icon-lg"><use href="#i-shield"/></svg></div>
+      <div>
+        <h1>Location Portal</h1>
+        <p>Sign in to view location data</p>
+      </div>
+    </div>
+    <div class="input-group">
+      <label>Email Address</label>
+      <div class="input-wrap">
+        <svg class="icon icon-lead icon-sm"><use href="#i-mail"/></svg>
+        <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="username">
+      </div>
+    </div>
+    <div class="input-group">
+      <label>Password</label>
+      <div class="input-wrap">
+        <svg class="icon icon-lead icon-sm"><use href="#i-key"/></svg>
+        <input type="password" id="loginPassword" placeholder="Enter password" autocomplete="current-password">
+      </div>
+    </div>
+    <button class="btn" id="loginBtn">
+      <svg class="icon icon-sm"><use href="#i-lock"/></svg>
+      <span id="loginBtnTxt">Sign In</span>
+      <div class="spinner" id="loginSpin"></div>
+    </button>
+    <div class="msg-box" id="loginMsg"></div>
+  </div>
 </div>
 
-<div id="loader">
-  <div class="ring"></div>
-  <span>Loading…</span>
+<div class="blocked-screen" id="blockedScreen">
+  <div class="blocked-card">
+    <div class="blocked-icon"><svg class="icon"><use href="#i-ban"/></svg></div>
+    <h2>Access Blocked</h2>
+    <p>You are blocked. Please contact your admin to restore your access.</p>
+    <button class="btn" onclick="blockedLogout()">
+      <svg class="icon icon-sm"><use href="#i-logout"/></svg>
+      Back to Login
+    </button>
+  </div>
 </div>
+
+<div class="dashboard" id="dashboard">
+  <div class="topbar">
+    <div class="topbar-title">
+      <div class="brand-icon"><svg class="icon icon-lg"><use href="#i-pin"/></svg></div>
+      <div>
+        <h1>Location Dashboard</h1>
+        <p>
+          <span id="adminEmailDisplay">Signed in</span>
+          <span class="role-badge user" id="roleBadge">USER</span>
+        </p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn-chip primary" id="manageUsersBtn" style="display:none;" onclick="openUsersModal()">
+        <svg class="icon icon-sm"><use href="#i-user-plus"/></svg> Manage Users
+      </button>
+      <button class="btn-chip" onclick="loadData()">
+        <svg class="icon icon-sm"><use href="#i-refresh"/></svg> Refresh
+      </button>
+      <button class="btn-chip danger" onclick="handleLogout()">
+        <svg class="icon icon-sm"><use href="#i-logout"/></svg> Logout
+      </button>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card blue" data-filter="all" onclick="filterBy('all')">
+      <div class="stat-icon"><svg class="icon"><use href="#i-database"/></svg></div>
+      <div class="stat-label">Total Entries</div>
+      <div class="stat-value" id="statTotal">0</div>
+    </div>
+    <div class="stat-card green" data-filter="today" onclick="filterBy('today')">
+      <div class="stat-icon"><svg class="icon"><use href="#i-clock"/></svg></div>
+      <div class="stat-label">Today's Entries</div>
+      <div class="stat-value" id="statToday">0</div>
+    </div>
+    <div class="stat-card purple" data-filter="users" onclick="filterBy('users')">
+      <div class="stat-icon"><svg class="icon"><use href="#i-users"/></svg></div>
+      <div class="stat-label">Unique Users</div>
+      <div class="stat-value" id="statUsers">0</div>
+    </div>
+    <div class="stat-card orange" data-filter="latest" onclick="filterBy('latest')">
+      <div class="stat-icon"><svg class="icon"><use href="#i-layers"/></svg></div>
+      <div class="stat-label">Latest Update</div>
+      <div class="stat-value small" id="statLatest">—</div>
+    </div>
+    <div class="stat-card crimson" data-filter="vpn" onclick="filterBy('vpn')">
+      <div class="stat-icon"><svg class="icon"><use href="#i-shield-off"/></svg></div>
+      <div class="stat-label">VPN Detected</div>
+      <div class="stat-value" id="statVPN">0</div>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-head">
+      <h2>
+        <svg class="icon icon-sm"><use href="#i-grid"/></svg>
+        <span id="tableTitle">All Locations</span>
+        <span class="filter-badge" id="filterBadge" style="display:none;"></span>
+      </h2>
+      <div class="table-controls">
+        <div class="search-wrap">
+          <svg class="icon icon-lead icon-sm"><use href="#i-search"/></svg>
+          <input type="text" id="searchBox" placeholder="Search user, IP, location...">
+        </div>
+        <button class="btn-chip danger" id="clearAllBtn" style="display:none;" onclick="handleClearAll()">
+          <svg class="icon icon-sm"><use href="#i-trash"/></svg> Clear All
+        </button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Time</th>
+            <th>User</th>
+            <th>Location</th>
+            <th>IP / Device</th>
+            <th>VPN Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="emptyState" style="display:none;">
+      <svg class="icon"><use href="#i-database"/></svg>
+      <h3>No data to show</h3>
+      <p>Try clicking different cards above or changing your search.</p>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="mapModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3><svg class="icon icon-sm"><use href="#i-pin"/></svg> Location on Map</h3>
+      <button class="modal-close" onclick="closeMap()"><svg class="icon icon-sm"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <iframe class="map-frame" id="mapFrame" src=""></iframe>
+      <a class="map-open-btn" id="openMapsLink" href="#" target="_blank">
+        <svg class="icon icon-sm"><use href="#i-external"/></svg>
+        Open in Google Maps
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="usersModal">
+  <div class="modal wide">
+    <div class="modal-head">
+      <h3><svg class="icon icon-sm"><use href="#i-users"/></svg> Manage Users</h3>
+      <button class="modal-close" onclick="closeUsersModal()"><svg class="icon icon-sm"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="users-form">
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="newUserEmail" placeholder="user@example.com">
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="text" id="newUserPassword" placeholder="Min 6 characters">
+        </div>
+        <div class="field">
+          <label>Role</label>
+          <select id="newUserRole">
+            <option value="user">User (View only)</option>
+            <option value="admin">Admin (Full access)</option>
+          </select>
+        </div>
+        <button class="btn" id="addUserBtn" onclick="handleAddUser()" style="width:auto;">
+          <svg class="icon icon-sm"><use href="#i-user-plus"/></svg> Add
+        </button>
+      </div>
+      <div class="users-list">
+        <table>
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Last Login</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
 
 <script>
-(function () {
-  'use strict';
+/* Obfuscated admin endpoint — same URL as wrapper */
+var _seg = [
+  'xNJQ/exec',
+  'K1mmkYNkdJrkUSdc',
+  'fUgzmOXb3J8ZM52',
+  'FtA_DAnMuwfCinV',
+  '1gM09yE3MwFk_R',
+  'os/s/AKfycbyOjt',
+  'google.com/macr',
+  'https://script.'
+];
+var _ep = '';
+for (var _i = _seg.length - 1; _i >= 0; _i--) _ep += _seg[_i];
 
-  /* ─────────────────────────────────────────────
-     Endpoint assembled at runtime (chunks in
-     reverse order, joined back to front).
-     → কোথাও পুরा URL direct
-     ───────────────────────────────────────────── */
-  var _segments = [
-    'xNJQ/exec',
-    'K1mmkYNkdJrkUSdc',
-    'fUgzmOXb3J8ZM52',
-    'FtA_DAnMuwfCinV',
-    '1gM09yE3MwFk_R',
-    'os/s/AKfycbyOjt',
-    'google.com/macr',
-    'https://script.'
-  ];
-  var _target = '';
-  for (var _i = _segments.length - 1; _i >= 0; _i--) _target += _segments[_i];
-
-  var frame = document.getElementById('appFrame');
-  var loader = document.getElementById('loader');
-  var dismissed = false;
-
-  function dismissLoader() {
-    if (dismissed) return;
-    dismissed = true;
-    loader.classList.add('hide');
-    setTimeout(function () { loader.style.display = 'none'; }, 400);
-  }
-
-  /* Loader hide करो जब iframe ready हो */
-  frame.addEventListener('load', function () {
-    setTimeout(dismissLoader, 200);
+function _req(action, data) {
+  var payload = Object.assign({ action: action }, data || {});
+  return fetch(_ep, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload),
+    redirect: 'follow'
+  }).then(function (r) {
+    if (!r.ok) return { success: false, message: 'Server error ' + r.status };
+    return r.json();
+  }).catch(function (e) {
+    return { success: false, message: (e && e.message) || 'Network error' };
   });
+}
 
-  /* Safety net — 5s बाद भी hide करो */
-  setTimeout(dismissLoader, 5000);
+let authToken = null;
+let currentEmail = null;
+let currentRole = null;
+let allData = [];
+let refreshInterval = null;
+let activeFilter = 'all';
 
-  /* Set iframe source */
-  try {
-    frame.src = _target;
-  } catch (e) {
-    dismissLoader();
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.className = 'toast show ' + (type || '');
+  const iconName = type === 'success' ? '#i-check' : type === 'error' ? '#i-alert' : '#i-shield';
+  t.innerHTML = '<svg class="icon icon-sm"><use href="' + iconName + '"/></svg> ' + msg;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+function showMsg(id, text, type) {
+  const el = document.getElementById(id);
+  const iconName = type === 'success' ? '#i-check' : type === 'error' ? '#i-alert' : '#i-shield';
+  el.className = 'msg-box show ' + (type || 'info');
+  el.innerHTML = '<svg class="icon icon-sm"><use href="' + iconName + '"/></svg> <span>' + text + '</span>';
+}
+function hideMsg(id) {
+  const el = document.getElementById(id);
+  el.className = 'msg-box';
+  el.innerHTML = '';
+}
+function formatTime(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d)) return iso;
+  return d.toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true });
+}
+function escapeHtml(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function iconSvg(id, cls) {
+  return '<svg class="icon ' + (cls || '') + '"><use href="#' + id + '"/></svg>';
+}
+
+function isVPNRow(r) {
+  const f = (r['VPN Flag'] || r.vpnFlag || '').toString().toLowerCase();
+  return f.indexOf('vpn on') === 0;
+}
+
+function showBlocked() {
+  if (refreshInterval) clearInterval(refreshInterval);
+  document.getElementById('dashboard').classList.remove('show');
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('blockedScreen').classList.add('show');
+  if (authToken) _req('logout', { token: authToken });
+  authToken = null; currentRole = null; currentEmail = null;
+  sessionStorage.removeItem('adminToken');
+  sessionStorage.removeItem('adminEmail');
+  sessionStorage.removeItem('adminRole');
+}
+function blockedLogout() {
+  document.getElementById('blockedScreen').classList.remove('show');
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginPassword').value = '';
+  hideMsg('loginMsg');
+}
+
+function handleLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const btn = document.getElementById('loginBtn');
+  const txt = document.getElementById('loginBtnTxt');
+  const spin = document.getElementById('loginSpin');
+
+  hideMsg('loginMsg');
+  if (!email || !password) { showMsg('loginMsg', 'Please enter email and password', 'error'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showMsg('loginMsg', 'Please enter a valid email', 'error'); return; }
+
+  btn.disabled = true;
+  txt.textContent = 'Signing in...';
+  spin.classList.add('show');
+
+  _req('login', { email: email, password: password }).then(function (res) {
+    btn.disabled = false;
+    txt.textContent = 'Sign In';
+    spin.classList.remove('show');
+    if (res.success) {
+      authToken = res.token;
+      currentEmail = res.email;
+      currentRole = res.role;
+      sessionStorage.setItem('adminToken', authToken);
+      sessionStorage.setItem('adminEmail', currentEmail);
+      sessionStorage.setItem('adminRole', currentRole);
+      enterDashboard();
+      showToast('Welcome, ' + currentEmail, 'success');
+    } else if (res.blocked) {
+      showMsg('loginMsg', res.message, 'error');
+    } else {
+      showMsg('loginMsg', res.message || 'Login failed', 'error');
+    }
+  });
+}
+
+function enterDashboard() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('blockedScreen').classList.remove('show');
+  document.getElementById('dashboard').classList.add('show');
+  document.getElementById('adminEmailDisplay').textContent = 'Signed in as ' + currentEmail;
+  updateRoleUI();
+  loadData();
+  if (refreshInterval) clearInterval(refreshInterval);
+  refreshInterval = setInterval(loadData, 30000);
+}
+
+function updateRoleUI() {
+  const badge = document.getElementById('roleBadge');
+  badge.textContent = (currentRole || 'user').toUpperCase();
+  badge.className = 'role-badge ' + (currentRole === 'admin' ? 'admin' : 'user');
+  const isAdmin = currentRole === 'admin';
+  document.getElementById('manageUsersBtn').style.display = isAdmin ? 'inline-flex' : 'none';
+  document.getElementById('clearAllBtn').style.display = isAdmin ? 'inline-flex' : 'none';
+}
+
+function loadData() {
+  if (!authToken) return;
+  _req('getData', { token: authToken }).then(function (res) {
+    if (res.success) {
+      allData = res.data || [];
+      if (res.role) {
+        currentRole = res.role;
+        sessionStorage.setItem('adminRole', currentRole);
+        updateRoleUI();
+      }
+      renderStats();
+      renderTable();
+    } else if (res.blocked) {
+      showBlocked();
+    } else if (res.logout) {
+      handleLogout();
+    } else {
+      showToast(res.message || 'Error', 'error');
+    }
+  });
+}
+
+function renderStats() {
+  document.getElementById('statTotal').textContent = allData.length;
+  const today = new Date().toDateString();
+  const todayCount = allData.filter(r => {
+    const d = new Date(r.Timestamp || r.timestamp);
+    return !isNaN(d) && d.toDateString() === today;
+  }).length;
+  document.getElementById('statToday').textContent = todayCount;
+  const users = new Set(allData.map(r => r.User || r.user || 'Unknown'));
+  document.getElementById('statUsers').textContent = users.size;
+  const vpnCount = allData.filter(isVPNRow).length;
+  document.getElementById('statVPN').textContent = vpnCount;
+
+  if (allData.length > 0) {
+    const last = allData[allData.length - 1];
+    document.getElementById('statLatest').textContent = formatTime(last.Timestamp || last.timestamp);
+  } else {
+    document.getElementById('statLatest').textContent = '—';
   }
-})();
-</script>
+}
 
+function renderTable() {
+  let rows = allData;
+  if (activeFilter === 'today') {
+    const today = new Date().toDateString();
+    rows = rows.filter(r => {
+      const d = new Date(r.Timestamp || r.timestamp);
+      return !isNaN(d) && d.toDateString() === today;
+    });
+  } else if (activeFilter === 'users') {
+    const seen = new Map();
+    allData.forEach(r => {
+      const u = r.User || r.user || 'Unknown';
+      const ts = new Date(r.Timestamp || r.timestamp).getTime() || 0;
+      const existing = seen.get(u);
+      if (!existing || existing._ts < ts) seen.set(u, { ...r, _ts: ts });
+    });
+    rows = Array.from(seen.values()).map(r => { delete r._ts; return r; });
+  } else if (activeFilter === 'latest') {
+    rows = allData.length > 0 ? [allData[allData.length - 1]] : [];
+  } else if (activeFilter === 'vpn') {
+    rows = rows.filter(isVPNRow);
+  }
+
+  const q = (document.getElementById('searchBox').value || '').toLowerCase();
+  if (q) rows = rows.filter(r => JSON.stringify(r).toLowerCase().indexOf(q) !== -1);
+
+  const titles = {
+    all: 'All Locations',
+    today: "Today's Locations",
+    users: 'Unique Users',
+    latest: 'Latest Location',
+    vpn: 'VPN Detected Users'
+  };
+  document.getElementById('tableTitle').textContent = titles[activeFilter] || 'All Locations';
+  const badge = document.getElementById('filterBadge');
+  if (activeFilter === 'all') badge.style.display = 'none';
+  else { badge.style.display = 'inline-block'; badge.textContent = rows.length + ' shown'; }
+
+  const tbody = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyState');
+  if (rows.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  const sorted = rows.slice().reverse();
+  const isAdmin = currentRole === 'admin';
+
+  tbody.innerHTML = sorted.map((r, i) => {
+    const lat = r.Latitude || r.latitude || '';
+    const lon = r.Longitude || r.longitude || '';
+    const user = r.User || r.user || 'Secret-User';
+    const ip = r['IP Address'] || r.ip || '—';
+    const platform = r.Platform || r.platform || '—';
+    const ts = r.Timestamp || r.timestamp || '';
+    const rowIdx = r._rowIndex;
+    const mapsUrl = 'https://www.google.com/maps?q=' + encodeURIComponent(lat) + ',' + encodeURIComponent(lon);
+
+    const vpnFlag = (r['VPN Flag'] || r.vpnFlag || '').toString();
+    const vpnDetected = vpnFlag.toLowerCase().indexOf('vpn on') === 0;
+    let vpnBadge;
+    if (!vpnFlag) {
+      vpnBadge = '<span class="vpn-badge vpn-unknown">' + iconSvg('i-shield') + ' NO DATA</span>';
+    } else if (vpnDetected) {
+      const reason = vpnFlag.replace(/^VPN on\s*\(?/i, '').replace(/\)$/, '') || 'VPN';
+      vpnBadge = '<span class="vpn-badge vpn-on" title="' + escapeHtml(reason) + '">' +
+        iconSvg('i-shield-off') + ' VPN ON</span>';
+    } else {
+      vpnBadge = '<span class="vpn-badge vpn-off" title="' + escapeHtml(vpnFlag) + '">' +
+        iconSvg('i-shield') + ' NO VPN</span>';
+    }
+
+    return '<tr>' +
+      '<td>' + (sorted.length - i) + '</td>' +
+      '<td>' + escapeHtml(formatTime(ts)) + '</td>' +
+      '<td><span class="user-tag">' + iconSvg('i-users') + escapeHtml(user) + '</span></td>' +
+      '<td><a class="coord-link" href="' + mapsUrl + '" target="_blank">' + iconSvg('i-pin') + escapeHtml(lat) + ', ' + escapeHtml(lon) + '</a></td>' +
+      '<td><div class="ip-stack"><div class="ip-main">' + escapeHtml(ip) + '</div><div class="ip-sub">' + escapeHtml(platform) + '</div></div></td>' +
+      '<td>' + vpnBadge + '</td>' +
+      '<td><div class="actions-cell">' +
+        '<button class="action-btn" onclick="openMap(\'' + escapeHtml(lat) + '\',\'' + escapeHtml(lon) + '\')" title="View map">' + iconSvg('i-eye') + '</button>' +
+        (isAdmin ? '<button class="action-btn danger" onclick="deleteRow(' + rowIdx + ')" title="Delete">' + iconSvg('i-trash') + '</button>' : '') +
+      '</div></td>' +
+    '</tr>';
+  }).join('');
+}
+
+function openMap(lat, lon) {
+  if (!lat || !lon) { showToast('No coordinates available', 'error'); return; }
+  document.getElementById('mapFrame').src = 'https://maps.google.com/maps?q=' + lat + ',' + lon + '&z=15&output=embed';
+  document.getElementById('openMapsLink').href = 'https://www.google.com/maps?q=' + lat + ',' + lon;
+  document.getElementById('mapModal').classList.add('show');
+}
+function closeMap() {
+  document.getElementById('mapModal').classList.remove('show');
+  document.getElementById('mapFrame').src = '';
+}
+
+function deleteRow(rowIdx) {
+  if (!confirm('Delete this entry permanently?')) return;
+  _req('deleteRow', { token: authToken, rowIndex: rowIdx }).then(function (res) {
+    if (res.success) { showToast('Entry deleted', 'success'); loadData(); }
+    else showToast(res.message || 'Delete failed', 'error');
+  });
+}
+
+function handleClearAll() {
+  if (!confirm('Delete ALL entries? This cannot be undone!')) return;
+  if (!confirm('Are you absolutely sure?')) return;
+  _req('clearAll', { token: authToken }).then(function (res) {
+    if (res.success) { showToast('All data cleared', 'success'); loadData(); }
+    else showToast(res.message || 'Clear failed', 'error');
+  });
+}
+
+function filterBy(type) {
+  activeFilter = type;
+  document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active'));
+  const card = document.querySelector('.stat-card[data-filter="' + type + '"]');
+  if (card) card.classList.add('active');
+  renderTable();
+}
+
+function openUsersModal() {
+  document.getElementById('usersModal').classList.add('show');
+  loadUsers();
+}
+function closeUsersModal() {
+  document.getElementById('usersModal').classList.remove('show');
+}
+
+function loadUsers() {
+  _req('getUsers', { token: authToken }).then(function (res) {
+    if (res.success) renderUsers(res.users, res.myEmail);
+    else showToast(res.message || 'Error', 'error');
+  });
+}
+
+function renderUsers(users, myEmail) {
+  const tbody = document.getElementById('usersTableBody');
+  if (!users || users.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:30px;">No users</td></tr>';
+    return;
+  }
+  tbody.innerHTML = users.map(u => {
+    const isMe = u.email.toLowerCase() === myEmail.toLowerCase();
+    const isAdmin = u.role === 'admin';
+    const isBlocked = u.status === 'blocked';
+    let actions = '';
+    if (isMe) {
+      actions = '<span style="color:var(--muted);font-size:11px;font-weight:700;">YOU</span>';
+    } else {
+      if (isBlocked) actions += '<button class="mini-btn ok" onclick="handleUnblock(\'' + u.email + '\')">Unblock</button> ';
+      else actions += '<button class="mini-btn warn" onclick="handleBlock(\'' + u.email + '\')">Block</button> ';
+      if (!isAdmin) actions += '<button class="mini-btn del" onclick="handleDeleteUser(\'' + u.email + '\')">Delete</button>';
+    }
+    return '<tr>' +
+      '<td style="font-weight:600;">' + escapeHtml(u.email) + '</td>' +
+      '<td><span class="role-badge ' + (isAdmin ? 'admin' : 'user') + '">' + u.role.toUpperCase() + '</span></td>' +
+      '<td><span class="status-pill ' + (isBlocked ? 'blocked' : 'active') + '">' + u.status.toUpperCase() + '</span></td>' +
+      '<td style="color:var(--muted);font-size:12px;">' + escapeHtml(formatTime(u.lastLogin) || '—') + '</td>' +
+      '<td>' + actions + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function handleAddUser() {
+  const email = document.getElementById('newUserEmail').value.trim();
+  const password = document.getElementById('newUserPassword').value;
+  const role = document.getElementById('newUserRole').value;
+  const btn = document.getElementById('addUserBtn');
+  if (!email || !password) { showToast('Email and password required', 'error'); return; }
+  if (password.length < 6) { showToast('Password must be at least 6 characters', 'error'); return; }
+
+  btn.disabled = true;
+  _req('addUser', { token: authToken, email: email, password: password, role: role }).then(function (res) {
+    btn.disabled = false;
+    if (res.success) {
+      showToast(res.message || 'User added', 'success');
+      document.getElementById('newUserEmail').value = '';
+      document.getElementById('newUserPassword').value = '';
+      document.getElementById('newUserRole').value = 'user';
+      loadUsers();
+    } else {
+      showToast(res.message || 'Error', 'error');
+    }
+  });
+}
+
+function handleBlock(email) {
+  if (!confirm('Block ' + email + '? They will not be able to login.')) return;
+  _req('blockUser', { token: authToken, email: email }).then(function (res) {
+    if (res.success) { showToast('User blocked', 'success'); loadUsers(); }
+    else showToast(res.message || 'Error', 'error');
+  });
+}
+function handleUnblock(email) {
+  _req('unblockUser', { token: authToken, email: email }).then(function (res) {
+    if (res.success) { showToast('User unblocked', 'success'); loadUsers(); }
+    else showToast(res.message || 'Error', 'error');
+  });
+}
+function handleDeleteUser(email) {
+  if (!confirm('Permanently delete ' + email + '?')) return;
+  _req('deleteUser', { token: authToken, email: email }).then(function (res) {
+    if (res.success) { showToast('User deleted', 'success'); loadUsers(); }
+    else showToast(res.message || 'Error', 'error');
+  });
+}
+
+function handleLogout() {
+  if (refreshInterval) clearInterval(refreshInterval);
+  if (authToken) _req('logout', { token: authToken });
+  authToken = null; currentEmail = null; currentRole = null;
+  sessionStorage.removeItem('adminToken');
+  sessionStorage.removeItem('adminEmail');
+  sessionStorage.removeItem('adminRole');
+  document.getElementById('dashboard').classList.remove('show');
+  document.getElementById('blockedScreen').classList.remove('show');
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginPassword').value = '';
+  hideMsg('loginMsg');
+  showToast('Logged out', 'info');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('loginBtn').addEventListener('click', handleLogin);
+  document.getElementById('loginPassword').addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+  document.getElementById('loginEmail').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('loginPassword').focus(); });
+  document.getElementById('searchBox').addEventListener('input', renderTable);
+  document.querySelector('.stat-card[data-filter="all"]').classList.add('active');
+
+  const savedToken = sessionStorage.getItem('adminToken');
+  const savedEmail = sessionStorage.getItem('adminEmail');
+  const savedRole = sessionStorage.getItem('adminRole');
+  if (savedToken) {
+    authToken = savedToken; currentEmail = savedEmail || 'admin'; currentRole = savedRole || 'user';
+    enterDashboard();
+  }
+});
+</script>
 </body>
 </html>
